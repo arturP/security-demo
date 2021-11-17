@@ -1,6 +1,7 @@
 package io.artur.spring.securitydemo.security;
 
 import io.artur.spring.securitydemo.auth.ApplicationUserService;
+import io.artur.spring.securitydemo.jwt.JwtConfig;
 import io.artur.spring.securitydemo.jwt.JwtTokenVerifier;
 import io.artur.spring.securitydemo.jwt.JwtUserPasswordAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import javax.crypto.SecretKey;
+
 import static io.artur.spring.securitydemo.security.ApplicationUserRole.*;
 
 /**
@@ -26,6 +29,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final PasswordEncoder passwordEncoder;
     private final ApplicationUserService applicationUserService;
+    private final SecretKey secretKey;
+    private final JwtConfig jwtConfig;
 
     @Bean
     public DaoAuthenticationProvider daoAuthenticationProvider() {
@@ -45,8 +50,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
         http.csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
-                .addFilter(new JwtUserPasswordAuthenticationFilter(authenticationManager()))
-                .addFilterAfter(new JwtTokenVerifier(), JwtUserPasswordAuthenticationFilter.class)
+                .addFilter(new JwtUserPasswordAuthenticationFilter(authenticationManager(), jwtConfig, secretKey))
+                .addFilterAfter(new JwtTokenVerifier(secretKey, jwtConfig), JwtUserPasswordAuthenticationFilter.class)
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
